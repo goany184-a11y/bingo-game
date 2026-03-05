@@ -72,39 +72,50 @@
             from { transform: scale(1); text-shadow: 0 0 10px #3b82f6; }
             to { transform: scale(1.1); text-shadow: 0 0 25px #8b5cf6, 0 0 40px #3b82f6; }
         }
-        /* 保存用キャプチャ時に余計なものが写らないようにする設定 */
         .capture-area {
             padding: 20px;
             background-color: #000;
             border-radius: 24px;
         }
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80px;
+        }
+        .logo-container img {
+            max-width: 160px;
+            height: auto;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
+            display: block;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center p-4 md:p-8">
 
-    <header class="mb-8 text-center">
+    <header class="mb-8 text-center flex flex-col items-center">
+        <div class="logo-container mb-4">
+            <!-- 外部画像リンクを使用するか、ファイルを同梱してください -->
+            <!-- ここではプレースホルダーとしてIMGタグを残しますが、GitHubに画像を上げる場合はパスを合わせます -->
+            <img id="main-logo" src="Anagumalabo_logo.png" alt="Anaguma Labo Logo" crossorigin="anonymous">
+        </div>
         <h1 class="text-3xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2 uppercase italic">
             Anaguma member BINGO
         </h1>
         <p class="text-zinc-500 text-sm">会ったことのあるメンバーをクリック！ 揃ったらビンゴ！</p>
     </header>
 
-    <!-- Bingo Card Container (画像保存の対象範囲) -->
     <div id="capture-target" class="capture-area relative mb-8">
         <div class="relative bg-zinc-900/50 p-4 md:p-8 rounded-3xl border border-zinc-800 shadow-2xl">
-            <div id="bingo-board" class="bingo-grid">
-                <!-- JS will populate cells here -->
-            </div>
+            <div id="bingo-board" class="bingo-grid"></div>
 
-            <!-- Bingo Overlay -->
             <div id="bingo-overlay" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-3xl z-10 text-center">
                 <div id="overlay-content">
-                    <h2 id="bingo-text" class="text-6xl md:text-7xl font-black text-white italic mb-8 uppercase bingo-animation">BINGO!!</h2>
+                    <h2 class="text-6xl md:text-7xl font-black text-white italic mb-8 uppercase bingo-animation">BINGO!!</h2>
                     <button onclick="closeOverlay()" class="px-12 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all transform hover:scale-105 active:scale-95 shadow-xl">OK</button>
                 </div>
             </div>
         </div>
-        <!-- キャプチャ時にロゴやクレジットを入れたい場合はここに配置 -->
         <div class="text-center mt-4 text-zinc-600 text-[10px] uppercase tracking-widest opacity-50">
             Anaguma Community Bingo Tool
         </div>
@@ -133,6 +144,12 @@
     </footer>
 
     <script>
+        const logoImg = document.getElementById('main-logo');
+        logoImg.onerror = function() {
+            this.style.display = 'none';
+            console.log("Logo file not found. Please ensure 'Anagumalabo_logo.png' is in the same directory.");
+        };
+
         const memberNames = [
             "さきこ", "kimkim", "アフロマンス", "ゆず", "misa", "あさみ", "ももこ", "たかなり", "トヨマネ", "わいちゃん",
             "くるみ", "Eddy", "moya", "だいちゃん", "しゅっぺ", "永田", "トミー", "けにー", "ゆり", "かほ",
@@ -168,7 +185,6 @@
             for (let i = 0; i < 25; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'bingo-cell';
-                
                 if (i === 12) {
                     cell.textContent = 'FREE';
                     cell.classList.add('free', 'marked');
@@ -179,18 +195,13 @@
                     cell.addEventListener('click', () => toggleMark(i, cell));
                     boardData.push({ id: i, name: name, marked: false });
                 }
-                
                 board.appendChild(cell);
             }
         }
 
         function toggleMark(index, element) {
             boardData[index].marked = !boardData[index].marked;
-            if (boardData[index].marked) {
-                element.classList.add('marked');
-            } else {
-                element.classList.remove('marked');
-            }
+            element.classList.toggle('marked', boardData[index].marked);
             checkBingo();
         }
 
@@ -200,87 +211,64 @@
 
         function checkBingo() {
             const size = 5;
-            let currentBingoCount = 0;
-
-            // 横
-            for (let i = 0; i < size; i++) {
-                if (boardData.slice(i * size, i * size + size).every(d => d.marked)) currentBingoCount++;
-            }
-
-            // 縦
+            let count = 0;
+            // Rows
+            for (let i = 0; i < size; i++) if (boardData.slice(i*5, i*5+5).every(d => d.marked)) count++;
+            // Cols
             for (let i = 0; i < size; i++) {
                 let col = [];
-                for (let j = 0; j < size; j++) col.push(boardData[i + j * size]);
-                if (col.every(d => d.marked)) currentBingoCount++;
+                for (let j = 0; j < size; j++) col.push(boardData[i + j*5]);
+                if (col.every(d => d.marked)) count++;
             }
-
-            // 斜め
-            let diag1 = [];
-            let diag2 = [];
+            // Diagonals
+            let d1 = [], d2 = [];
             for (let i = 0; i < size; i++) {
-                diag1.push(boardData[i * (size + 1)]);
-                diag2.push(boardData[(i + 1) * (size - 1)]);
+                d1.push(boardData[i * 6]);
+                d2.push(boardData[(i + 1) * 4]);
             }
-            if (diag1.every(d => d.marked)) currentBingoCount++;
-            if (diag2.every(d => d.marked)) currentBingoCount++;
+            if (d1.every(d => d.marked)) count++;
+            if (d2.every(d => d.marked)) count++;
 
-            if (currentBingoCount > completedBingos) {
-                completedBingos = currentBingoCount;
+            if (count > completedBingos) {
+                completedBingos = count;
                 updateCounter();
                 showOverlay();
-            } else if (currentBingoCount < completedBingos) {
-                completedBingos = currentBingoCount;
+            } else {
+                completedBingos = count;
                 updateCounter();
             }
         }
 
-        function showOverlay() {
-            document.getElementById('bingo-overlay').classList.remove('hidden');
-        }
+        function showOverlay() { document.getElementById('bingo-overlay').classList.remove('hidden'); }
+        function closeOverlay() { document.getElementById('bingo-overlay').classList.add('hidden'); }
 
-        function closeOverlay() {
-            document.getElementById('bingo-overlay').classList.add('hidden');
-        }
-
-        // 画像として保存する処理
         async function saveAsImage() {
             const target = document.getElementById('capture-target');
             const saveBtn = document.getElementById('save-btn');
-            
-            // ボタンを一時的に無効化
             saveBtn.disabled = true;
             saveBtn.innerText = "保存中...";
-
             try {
                 const canvas = await html2canvas(target, {
                     backgroundColor: '#000',
-                    scale: 2, // 高解像度で保存
-                    logging: false,
-                    useCORS: true
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true
                 });
-                
                 const link = document.createElement('a');
-                link.download = `AnagumaBingo_${new Date().getTime()}.png`;
+                link.download = `AnagumaBingo_${Date.now()}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             } catch (err) {
-                console.error("保存に失敗しました:", err);
+                console.error(err);
             } finally {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    画像として保存
-                `;
+                saveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>画像として保存`;
             }
         }
 
         document.getElementById('save-btn').addEventListener('click', saveAsImage);
-
         document.getElementById('regenerate-btn').addEventListener('click', () => {
-            if (confirm('カードを新しく作り直しますか？')) {
-                initGame();
-                closeOverlay();
-            }
+            if (confirm('カードを新しく作り直しますか？')) initGame();
         });
 
         initGame();
