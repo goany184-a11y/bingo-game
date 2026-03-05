@@ -1,305 +1,289 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2299.77">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anaguma member BINGO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HTMLを画像に変換するためのライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .bingo-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #18181b;
+            border: 1px solid #27272a;
+            word-break: break-all;
+            overflow: hidden;
+        }
+        @media (min-width: 640px) {
+            .bingo-cell { font-size: 0.9rem; padding: 8px; }
+            .bingo-grid { gap: 12px; }
+        }
+        .bingo-cell:hover {
+            border-color: #3b82f6;
+            background: #27272a;
+        }
+        .bingo-cell.marked {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            transform: scale(0.95);
+        }
+        .bingo-cell.free {
+            background: #3f3f46;
+            color: #fbbf24;
+            border-color: #fbbf24;
+        }
+        .bingo-cell.free.marked {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+        }
+        .bingo-animation {
+            animation: celebrate 0.5s ease-out infinite alternate;
+        }
+        @keyframes celebrate {
+            from { transform: scale(1); text-shadow: 0 0 10px #3b82f6; }
+            to { transform: scale(1.1); text-shadow: 0 0 25px #8b5cf6, 0 0 40px #3b82f6; }
+        }
+        /* 保存用キャプチャ時に余計なものが写らないようにする設定 */
+        .capture-area {
+            padding: 20px;
+            background-color: #000;
+            border-radius: 24px;
+        }
+    </style>
 </head>
-<body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="ja"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Anaguma member BINGO&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- HTMLを画像に変換するためのライブラリ --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #000;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #fff;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>min-height: 100vh;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>flex-direction: column;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.bingo-grid {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: grid;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>grid-template-columns: repeat(5, 1fr);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>max-width: 600px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.bingo-cell {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>aspect-ratio: 1 / 1;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>text-align: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 4px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 0.75rem;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: bold;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transition: all 0.2s;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #18181b;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid #27272a;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>word-break: break-all;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>overflow: hidden;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>@media (min-width: 640px) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.bingo-cell { font-size: 0.9rem; padding: 8px; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>.bingo-grid { gap: 12px; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.bingo-cell:hover {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-color: #3b82f6;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #27272a;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.bingo-cell.marked {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(135deg, #3b82f6, #8b5cf6);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-color: transparent;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transform: scale(0.95);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.bingo-cell.free {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: #3f3f46;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #fbbf24;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-color: #fbbf24;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.bingo-cell.free.marked {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(135deg, #f59e0b, #ef4444);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.bingo-animation {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>animation: celebrate 0.5s ease-out infinite alternate;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>@keyframes celebrate {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>from { transform: scale(1); text-shadow: 0 0 10px #3b82f6; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>to { transform: scale(1.1); text-shadow: 0 0 25px #8b5cf6, 0 0 40px #3b82f6; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* 保存用キャプチャ時に余計なものが写らないようにする設定 */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.capture-area {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #000;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 24px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body class="flex flex-col items-center p-4 md:p-8"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;header class="mb-8 text-center"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1 class="text-3xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2 uppercase italic"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>Anaguma member BINGO</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p class="text-zinc-500 text-sm"&gt;会ったことのあるメンバーをクリック！ 揃ったらビンゴ！&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/header&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Bingo Card Container (画像保存の対象範囲) --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="capture-target" class="capture-area relative mb-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="relative bg-zinc-900/50 p-4 md:p-8 rounded-3xl border border-zinc-800 shadow-2xl"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="bingo-board" class="bingo-grid"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;!-- JS will populate cells here --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;!-- Bingo Overlay --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="bingo-overlay" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-3xl z-10 text-center"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;div id="overlay-content"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;h2 id="bingo-text" class="text-6xl md:text-7xl font-black text-white italic mb-8 uppercase bingo-animation"&gt;BINGO!!&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;button onclick="closeOverlay()" class="px-12 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all transform hover:scale-105 active:scale-95 shadow-xl"&gt;OK&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- キャプチャ時にロゴやクレジットを入れたい場合はここに配置 --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="text-center mt-4 text-zinc-600 text-[10px] uppercase tracking-widest opacity-50"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>Anaguma Community Bingo Tool</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="flex flex-col items-center gap-6"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="bingo-counter" class="text-blue-400 font-bold bg-blue-900/20 px-6 py-2 rounded-full border border-blue-800/50 text-lg"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>Bingo Count: 0</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="flex flex-wrap justify-center gap-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button id="save-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"&gt;&lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;&lt;polyline points="7 10 12 15 17 10"/&gt;&lt;line x1="12" y1="15" x2="12" y2="3"/&gt;&lt;/svg&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>画像として保存</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/button&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;button id="regenerate-btn" class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all flex items-center gap-2"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"&gt;&lt;path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/&gt;&lt;path d="M21 3v5h-5"/&gt;&lt;path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/&gt;&lt;path d="M3 21v-5h5"/&gt;&lt;/svg&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>カードを再生成</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;footer class="mt-12 text-zinc-600 text-xs text-center pb-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&amp;copy; Anaguma Community Bingo Tool</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/footer&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const memberNames = [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"さきこ", "kimkim", "アフロマンス", "ゆず", "misa", "あさみ", "ももこ", "たかなり", "トヨマネ", "わいちゃん",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"くるみ", "Eddy", "moya", "だいちゃん", "しゅっぺ", "永田", "トミー", "けにー", "ゆり", "かほ",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"Takaaya", "あやか", "きんちゃん", "こい", "ありな", "とも", "りり", "omiki", "Jun Inaba", "タカヒロ",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"ひかり", "ひろき", "しの", "にーやん", "あいめろ", "ゆきや／チベ", "しん", "ノナカ", "yas-o", "まっとも",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"コジ", "りみ", "たびろち", "ユート", "あかりん", "じょう", "もりや", "おーしま", "スイタ氏", "えりんご",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"あせどん", "やぶ", "ルーク", "ニック", "よねじ", "いつか", "ミハラ", "まあさ", "あやせ", "くの",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"Suzume", "くりぴ〜", "ゆい", "アラレ", "まゆ", "さき", "5歳", "ぴろ", "つっくん", "じょ",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"白鳥るな", "りょうちゃん", "アイ", "おいちゃん", "ももな", "ささき", "アトム", "yoshi", "ナホ", "いちろー",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"西田 真魚", "ダイスケ", "ミヤ", "HERO", "パクチー長瀬", "たぐち", "まっしー", "あや", "くら", "さいさい",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"せつこ", "ハマー", "なお", "じゅんや", "よしよし", "フルッター", "ユウ", "しらさか", "いじゅ", "叶ここ",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"川崎塾", "あさくら", "ちあき", "ちょう", "さらにあん", "みどり", "しもりん", "おかっち", "おしげ", "かずーちゃ",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"ねじ", "との", "せん", "まお", "ゆーじ", "ジロー", "ぽん(こやま)", "なかやま", "マッチ", "ほのか",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"えいじ", "のぞみ", "みょっこ", "よーすけ", "mika", "シュウヘイ", "しゅうすけ", "マサト", "米光一成", "よね",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"マウイ", "ayumi", "みやかな", "柚井ゆい", "じゅん", "あっぴ", "ふじ", "ベロタン", "あつみん", "ごう",</p>
-<p class="p1"><span class="Apple-converted-space">            </span>"はしもと", "こうは", "ゆうこ", "ちかさん", "青鳥の如き尊きもの（アオドリ）"</p>
-<p class="p1"><span class="Apple-converted-space">        </span>];</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>let boardData = [];</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let completedBingos = 0;<span class="Apple-converted-space"> </span></p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function initGame() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const board = document.getElementById('bingo-board');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>board.innerHTML = '';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>boardData = [];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>completedBingos = 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>updateCounter();</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const shuffled = [...memberNames].sort(() =&gt; 0.5 - Math.random());</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const selected = shuffled.slice(0, 24);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let nameIndex = 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; 25; i++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const cell = document.createElement('div');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>cell.className = 'bingo-cell';</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (i === 12) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>cell.textContent = 'FREE';</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>cell.classList.add('free', 'marked');</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>boardData.push({ id: i, name: 'FREE', marked: true });</p>
-<p class="p1"><span class="Apple-converted-space">                </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const name = selected[nameIndex++];</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>cell.textContent = name;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>cell.addEventListener('click', () =&gt; toggleMark(i, cell));</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>boardData.push({ id: i, name: name, marked: false });</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>board.appendChild(cell);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function toggleMark(index, element) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>boardData[index].marked = !boardData[index].marked;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (boardData[index].marked) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>element.classList.add('marked');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>element.classList.remove('marked');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>checkBingo();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function updateCounter() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('bingo-counter').textContent = `Bingo Count: ${completedBingos}`;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function checkBingo() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const size = 5;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let currentBingoCount = 0;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 横</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; size; i++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (boardData.slice(i * size, i * size + size).every(d =&gt; d.marked)) currentBingoCount++;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 縦</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; size; i++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let col = [];</p>
-<p class="p1"><span class="Apple-converted-space">                </span>for (let j = 0; j &lt; size; j++) col.push(boardData[i + j * size]);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (col.every(d =&gt; d.marked)) currentBingoCount++;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 斜め</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let diag1 = [];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let diag2 = [];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; size; i++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>diag1.push(boardData[i * (size + 1)]);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>diag2.push(boardData[(i + 1) * (size - 1)]);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (diag1.every(d =&gt; d.marked)) currentBingoCount++;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (diag2.every(d =&gt; d.marked)) currentBingoCount++;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (currentBingoCount &gt; completedBingos) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>completedBingos = currentBingoCount;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>updateCounter();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showOverlay();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else if (currentBingoCount &lt; completedBingos) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>completedBingos = currentBingoCount;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>updateCounter();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function showOverlay() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('bingo-overlay').classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function closeOverlay() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('bingo-overlay').classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// 画像として保存する処理</p>
-<p class="p1"><span class="Apple-converted-space">        </span>async function saveAsImage() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const target = document.getElementById('capture-target');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const saveBtn = document.getElementById('save-btn');</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// ボタンを一時的に無効化</p>
-<p class="p1"><span class="Apple-converted-space">            </span>saveBtn.disabled = true;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>saveBtn.innerText = "保存中...";</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>try {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const canvas = await html2canvas(target, {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>backgroundColor: '#000',</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>scale: 2, // 高解像度で保存</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>logging: false,</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>useCORS: true</p>
-<p class="p1"><span class="Apple-converted-space">                </span>});</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>const link = document.createElement('a');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>link.download = `AnagumaBingo_${new Date().getTime()}.png`;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>link.href = canvas.toDataURL('image/png');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>link.click();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} catch (err) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>console.error("保存に失敗しました:", err);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} finally {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>saveBtn.disabled = false;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>saveBtn.innerHTML = `</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"&gt;&lt;path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/&gt;&lt;polyline points="7 10 12 15 17 10"/&gt;&lt;line x1="12" y1="15" x2="12" y2="3"/&gt;&lt;/svg&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>画像として保存</p>
-<p class="p1"><span class="Apple-converted-space">                </span>`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('save-btn').addEventListener('click', saveAsImage);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('regenerate-btn').addEventListener('click', () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (confirm('カードを新しく作り直しますか？')) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>initGame();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>closeOverlay();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>initGame();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+<body class="flex flex-col items-center p-4 md:p-8">
+
+    <header class="mb-8 text-center">
+        <h1 class="text-3xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2 uppercase italic">
+            Anaguma member BINGO
+        </h1>
+        <p class="text-zinc-500 text-sm">会ったことのあるメンバーをクリック！ 揃ったらビンゴ！</p>
+    </header>
+
+    <!-- Bingo Card Container (画像保存の対象範囲) -->
+    <div id="capture-target" class="capture-area relative mb-8">
+        <div class="relative bg-zinc-900/50 p-4 md:p-8 rounded-3xl border border-zinc-800 shadow-2xl">
+            <div id="bingo-board" class="bingo-grid">
+                <!-- JS will populate cells here -->
+            </div>
+
+            <!-- Bingo Overlay -->
+            <div id="bingo-overlay" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-3xl z-10 text-center">
+                <div id="overlay-content">
+                    <h2 id="bingo-text" class="text-6xl md:text-7xl font-black text-white italic mb-8 uppercase bingo-animation">BINGO!!</h2>
+                    <button onclick="closeOverlay()" class="px-12 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all transform hover:scale-105 active:scale-95 shadow-xl">OK</button>
+                </div>
+            </div>
+        </div>
+        <!-- キャプチャ時にロゴやクレジットを入れたい場合はここに配置 -->
+        <div class="text-center mt-4 text-zinc-600 text-[10px] uppercase tracking-widest opacity-50">
+            Anaguma Community Bingo Tool
+        </div>
+    </div>
+
+    <div class="flex flex-col items-center gap-6">
+        <div id="bingo-counter" class="text-blue-400 font-bold bg-blue-900/20 px-6 py-2 rounded-full border border-blue-800/50 text-lg">
+            Bingo Count: 0
+        </div>
+        
+        <div class="flex flex-wrap justify-center gap-4">
+            <button id="save-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                画像として保存
+            </button>
+
+            <button id="regenerate-btn" class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                カードを再生成
+            </button>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-zinc-600 text-xs text-center pb-8">
+        &copy; Anaguma Community Bingo Tool
+    </footer>
+
+    <script>
+        const memberNames = [
+            "さきこ", "kimkim", "アフロマンス", "ゆず", "misa", "あさみ", "ももこ", "たかなり", "トヨマネ", "わいちゃん",
+            "くるみ", "Eddy", "moya", "だいちゃん", "しゅっぺ", "永田", "トミー", "けにー", "ゆり", "かほ",
+            "Takaaya", "あやか", "きんちゃん", "こい", "ありな", "とも", "りり", "omiki", "Jun Inaba", "タカヒロ",
+            "ひかり", "ひろき", "しの", "にーやん", "あいめろ", "ゆきや／チベ", "しん", "ノナカ", "yas-o", "まっとも",
+            "コジ", "りみ", "たびろち", "ユート", "あかりん", "じょう", "もりや", "おーしま", "スイタ氏", "えりんご",
+            "あせどん", "やぶ", "ルーク", "ニック", "よねじ", "いつか", "ミハラ", "まあさ", "あやせ", "くの",
+            "Suzume", "くりぴ〜", "ゆい", "アラレ", "まゆ", "さき", "5歳", "ぴろ", "つっくん", "じょ",
+            "白鳥るな", "りょうちゃん", "アイ", "おいちゃん", "ももな", "ささき", "アトム", "yoshi", "ナホ", "いちろー",
+            "西田 真魚", "ダイスケ", "ミヤ", "HERO", "パクチー長瀬", "たぐち", "まっしー", "あや", "くら", "さいさい",
+            "せつこ", "ハマー", "なお", "じゅんや", "よしよし", "フルッター", "ユウ", "しらさか", "いじゅ", "叶ここ",
+            "川崎塾", "あさくら", "ちあき", "ちょう", "さらにあん", "みどり", "しもりん", "おかっち", "おしげ", "かずーちゃ",
+            "ねじ", "との", "せん", "まお", "ゆーじ", "ジロー", "ぽん(こやま)", "なかやま", "マッチ", "ほのか",
+            "えいじ", "のぞみ", "みょっこ", "よーすけ", "mika", "シュウヘイ", "しゅうすけ", "マサト", "米光一成", "よね",
+            "マウイ", "ayumi", "みやかな", "柚井ゆい", "じゅん", "あっぴ", "ふじ", "ベロタン", "あつみん", "ごう",
+            "はしもと", "こうは", "ゆうこ", "ちかさん", "青鳥の如き尊きもの（アオドリ）"
+        ];
+
+        let boardData = [];
+        let completedBingos = 0; 
+
+        function initGame() {
+            const board = document.getElementById('bingo-board');
+            board.innerHTML = '';
+            boardData = [];
+            completedBingos = 0;
+            updateCounter();
+            
+            const shuffled = [...memberNames].sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 24);
+            
+            let nameIndex = 0;
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+                
+                if (i === 12) {
+                    cell.textContent = 'FREE';
+                    cell.classList.add('free', 'marked');
+                    boardData.push({ id: i, name: 'FREE', marked: true });
+                } else {
+                    const name = selected[nameIndex++];
+                    cell.textContent = name;
+                    cell.addEventListener('click', () => toggleMark(i, cell));
+                    boardData.push({ id: i, name: name, marked: false });
+                }
+                
+                board.appendChild(cell);
+            }
+        }
+
+        function toggleMark(index, element) {
+            boardData[index].marked = !boardData[index].marked;
+            if (boardData[index].marked) {
+                element.classList.add('marked');
+            } else {
+                element.classList.remove('marked');
+            }
+            checkBingo();
+        }
+
+        function updateCounter() {
+            document.getElementById('bingo-counter').textContent = `Bingo Count: ${completedBingos}`;
+        }
+
+        function checkBingo() {
+            const size = 5;
+            let currentBingoCount = 0;
+
+            // 横
+            for (let i = 0; i < size; i++) {
+                if (boardData.slice(i * size, i * size + size).every(d => d.marked)) currentBingoCount++;
+            }
+
+            // 縦
+            for (let i = 0; i < size; i++) {
+                let col = [];
+                for (let j = 0; j < size; j++) col.push(boardData[i + j * size]);
+                if (col.every(d => d.marked)) currentBingoCount++;
+            }
+
+            // 斜め
+            let diag1 = [];
+            let diag2 = [];
+            for (let i = 0; i < size; i++) {
+                diag1.push(boardData[i * (size + 1)]);
+                diag2.push(boardData[(i + 1) * (size - 1)]);
+            }
+            if (diag1.every(d => d.marked)) currentBingoCount++;
+            if (diag2.every(d => d.marked)) currentBingoCount++;
+
+            if (currentBingoCount > completedBingos) {
+                completedBingos = currentBingoCount;
+                updateCounter();
+                showOverlay();
+            } else if (currentBingoCount < completedBingos) {
+                completedBingos = currentBingoCount;
+                updateCounter();
+            }
+        }
+
+        function showOverlay() {
+            document.getElementById('bingo-overlay').classList.remove('hidden');
+        }
+
+        function closeOverlay() {
+            document.getElementById('bingo-overlay').classList.add('hidden');
+        }
+
+        // 画像として保存する処理
+        async function saveAsImage() {
+            const target = document.getElementById('capture-target');
+            const saveBtn = document.getElementById('save-btn');
+            
+            // ボタンを一時的に無効化
+            saveBtn.disabled = true;
+            saveBtn.innerText = "保存中...";
+
+            try {
+                const canvas = await html2canvas(target, {
+                    backgroundColor: '#000',
+                    scale: 2, // 高解像度で保存
+                    logging: false,
+                    useCORS: true
+                });
+                
+                const link = document.createElement('a');
+                link.download = `AnagumaBingo_${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error("保存に失敗しました:", err);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    画像として保存
+                `;
+            }
+        }
+
+        document.getElementById('save-btn').addEventListener('click', saveAsImage);
+
+        document.getElementById('regenerate-btn').addEventListener('click', () => {
+            if (confirm('カードを新しく作り直しますか？')) {
+                initGame();
+                closeOverlay();
+            }
+        });
+
+        initGame();
+    </script>
 </body>
 </html>
