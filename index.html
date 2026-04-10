@@ -1,277 +1,738 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anaguma member BINGO</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- HTMLを画像に変換するためのライブラリ -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-        body {
-            background-color: #000;
-            color: #fff;
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .bingo-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            max-width: 600px;
-            width: 100%;
-        }
-        .bingo-cell {
-            aspect-ratio: 1 / 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #18181b;
-            border: 1px solid #27272a;
-            word-break: break-all;
-            overflow: hidden;
-        }
-        @media (min-width: 640px) {
-            .bingo-cell { font-size: 0.9rem; padding: 8px; }
-            .bingo-grid { gap: 12px; }
-        }
-        .bingo-cell:hover {
-            border-color: #3b82f6;
-            background: #27272a;
-        }
-        .bingo-cell.marked {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-            transform: scale(0.95);
-        }
-        .bingo-cell.free {
-            background: #3f3f46;
-            color: #fbbf24;
-            border-color: #fbbf24;
-        }
-        .bingo-cell.free.marked {
-            background: linear-gradient(135deg, #f59e0b, #ef4444);
-            color: white;
-        }
-        .bingo-animation {
-            animation: celebrate 0.5s ease-out infinite alternate;
-        }
-        @keyframes celebrate {
-            from { transform: scale(1); text-shadow: 0 0 10px #3b82f6; }
-            to { transform: scale(1.1); text-shadow: 0 0 25px #8b5cf6, 0 0 40px #3b82f6; }
-        }
-        .capture-area {
-            padding: 20px;
-            background-color: #000;
-            border-radius: 24px;
-        }
-        .logo-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 80px;
-        }
-        .logo-container img {
-            max-width: 160px;
-            height: auto;
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
-            display: block;
-        }
-    </style>
-</head>
-<body class="flex flex-col items-center p-4 md:p-8">
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Gift,
+  Trophy,
+  Plus,
+  Sparkles,
+  Target,
+  Send,
+  Camera,
+  Flame,
+  ChevronRight,
+  Crown,
+  MessageCircle,
+  Heart,
+  Home,
+} from "lucide-react";
 
-    <header class="mb-8 text-center flex flex-col items-center">
-        <div class="logo-container mb-4">
-            <!-- 外部画像リンクを使用するか、ファイルを同梱してください -->
-            <!-- ここではプレースホルダーとしてIMGタグを残しますが、GitHubに画像を上げる場合はパスを合わせます -->
-            <img id="main-logo" src="Anagumalabo_logo.png" alt="Anaguma Labo Logo" crossorigin="anonymous">
-        </div>
-        <h1 class="text-3xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2 uppercase italic">
-            Anaguma member BINGO
-        </h1>
-        <p class="text-zinc-500 text-sm">会ったことのあるメンバーをクリック！ 揃ったらビンゴ！</p>
-    </header>
+/**
+ * Danshari Quest
+ * Mobile-first social prototype with a Supabase-ready data layer.
+ *
+ * Supabase接続の流れ
+ * 1. npm i @supabase/supabase-js
+ * 2. profiles / posts / transfers テーブルを作る
+ * 3. localStorage adapter を supabase adapter に差し替える
+ * 4. 認証を追加する
+ */
 
-    <div id="capture-target" class="capture-area relative mb-8">
-        <div class="relative bg-zinc-900/50 p-4 md:p-8 rounded-3xl border border-zinc-800 shadow-2xl">
-            <div id="bingo-board" class="bingo-grid"></div>
+const USE_SUPABASE = false;
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-            <div id="bingo-overlay" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md rounded-3xl z-10 text-center">
-                <div id="overlay-content">
-                    <h2 class="text-6xl md:text-7xl font-black text-white italic mb-8 uppercase bingo-animation">BINGO!!</h2>
-                    <button onclick="closeOverlay()" class="px-12 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all transform hover:scale-105 active:scale-95 shadow-xl">OK</button>
+// import { createClient } from "@supabase/supabase-js";
+// const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const seedUsers = [
+  { id: 1, name: "Nao", points: 18, streak: 3, avatar: "N" },
+  { id: 2, name: "Mika", points: 12, streak: 2, avatar: "M" },
+  { id: 3, name: "Ren", points: 9, streak: 1, avatar: "R" },
+  { id: 4, name: "Sora", points: 15, streak: 4, avatar: "S" },
+];
+
+const seedPosts = [
+  {
+    id: 101,
+    userId: 2,
+    item: "1年以上着ていなかったニット",
+    category: "服",
+    mission: "1年以上着てない服を1つ捨てろ",
+    points: 3,
+    note: "好きだったけど、ずっと出番なし。",
+    image: "",
+    cheers: 2,
+    comments: 1,
+    createdAt: todayAt(9, 10),
+  },
+  {
+    id: 102,
+    userId: 4,
+    item: "使っていない紙袋の束",
+    category: "日用品",
+    mission: "“なんとなく残してる物”を1つ処分",
+    points: 2,
+    note: "棚が軽くなってうれしい。",
+    image: "",
+    cheers: 4,
+    comments: 0,
+    createdAt: todayAt(11, 45),
+  },
+  {
+    id: 103,
+    userId: 1,
+    item: "古いケーブル2本",
+    category: "ガジェット",
+    mission: "今すぐ1つ捨てろ",
+    points: 2,
+    note: "用途不明ケーブル卒業。",
+    image: "",
+    cheers: 1,
+    comments: 0,
+    createdAt: todayAt(13, 5),
+  },
+];
+
+const seedTransfers = [
+  {
+    id: 201,
+    fromUserId: 1,
+    toUserId: 2,
+    points: 2,
+    reason: "思い切りがよかったで賞",
+    createdAt: todayAt(14, 2),
+  },
+];
+
+const missionTemplates = [
+  { id: 1, title: "1年以上着てない服を1つ捨てろ", points: 3, category: "服", difficulty: "ふつう" },
+  { id: 2, title: "“なんとなく残してる物”を1つ処分", points: 2, category: "自由", difficulty: "やさしい" },
+  { id: 3, title: "今すぐ1つ捨てろ", points: 2, category: "自由", difficulty: "やさしい" },
+  { id: 4, title: "カバンの中から不要なものを1つ手放す", points: 1, category: "日用品", difficulty: "やさしい" },
+  { id: 5, title: "迷っていたものを1つ処分", points: 4, category: "自由", difficulty: "むずかしい" },
+];
+
+function todayAt(hour, minute) {
+  const d = new Date();
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+function formatTime(iso) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
+function isToday(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
+
+function cn(...values) {
+  return values.filter(Boolean).join(" ");
+}
+
+const localKey = "danshari-quest-mobile-v1";
+
+const localAdapter = {
+  async load() {
+    const raw = localStorage.getItem(localKey);
+    if (!raw) {
+      return {
+        users: seedUsers,
+        posts: seedPosts,
+        transfers: seedTransfers,
+        currentUserId: 1,
+      };
+    }
+    return JSON.parse(raw);
+  },
+  async save(state) {
+    localStorage.setItem(localKey, JSON.stringify(state));
+  },
+};
+
+/**
+const supabaseAdapter = {
+  async load() {
+    const [{ data: users }, { data: posts }, { data: transfers }] = await Promise.all([
+      supabase.from("profiles").select("*").order("id"),
+      supabase.from("posts").select("*").order("created_at", { ascending: false }),
+      supabase.from("transfers").select("*").order("created_at", { ascending: false }),
+    ]);
+
+    return {
+      users: (users ?? []).map((u) => ({
+        id: u.id,
+        name: u.name,
+        points: u.points,
+        streak: u.streak,
+        avatar: u.avatar,
+      })),
+      posts: (posts ?? []).map((p) => ({
+        id: p.id,
+        userId: p.user_id,
+        item: p.item,
+        category: p.category,
+        mission: p.mission,
+        points: p.points,
+        note: p.note,
+        image: p.image_url,
+        cheers: p.cheers_count ?? 0,
+        comments: p.comments_count ?? 0,
+        createdAt: p.created_at,
+      })),
+      transfers: (transfers ?? []).map((t) => ({
+        id: t.id,
+        fromUserId: t.from_user_id,
+        toUserId: t.to_user_id,
+        points: t.points,
+        reason: t.reason,
+        createdAt: t.created_at,
+      })),
+      currentUserId: users?.[0]?.id ?? 1,
+    };
+  },
+  async save() {
+    // Supabaseモードでは各 mutation で直接保存する想定
+  },
+};
+*/
+
+function App() {
+  const adapter = USE_SUPABASE ? localAdapter : localAdapter;
+  const [hydrated, setHydrated] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [transfers, setTransfers] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(1);
+  const [tab, setTab] = useState("home");
+  const [selectedMission, setSelectedMission] = useState(missionTemplates[0].title);
+  const [item, setItem] = useState("");
+  const [category, setCategory] = useState("服");
+  const [note, setNote] = useState("");
+  const [image, setImage] = useState("");
+  const [transferTo, setTransferTo] = useState(2);
+  const [transferPoints, setTransferPoints] = useState(1);
+  const [transferReason, setTransferReason] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const data = await adapter.load();
+      if (!mounted) return;
+      setUsers(data.users ?? []);
+      setPosts(data.posts ?? []);
+      setTransfers(data.transfers ?? []);
+      setCurrentUserId(data.currentUserId ?? 1);
+      setHydrated(true);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    adapter.save({ users, posts, transfers, currentUserId });
+  }, [users, posts, transfers, currentUserId, hydrated]);
+
+  const currentUser = useMemo(() => users.find((u) => u.id === currentUserId) ?? users[0], [users, currentUserId]);
+  const todayPosts = useMemo(() => posts.filter((p) => isToday(p.createdAt)), [posts]);
+  const todayTransfers = useMemo(() => transfers.filter((t) => isToday(t.createdAt)), [transfers]);
+  const ranking = useMemo(() => [...users].sort((a, b) => b.points - a.points), [users]);
+
+  const totalTodayPoints = todayPosts.reduce((sum, post) => sum + post.points, 0);
+  const totalTodayItems = todayPosts.length;
+
+  const feed = useMemo(() => {
+    const items = [
+      ...todayPosts.map((post) => ({ type: "post", createdAt: post.createdAt, data: post })),
+      ...todayTransfers.map((transfer) => ({ type: "transfer", createdAt: transfer.createdAt, data: transfer })),
+    ];
+    return items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [todayPosts, todayTransfers]);
+
+  function resetDemo() {
+    setUsers(seedUsers);
+    setPosts(seedPosts);
+    setTransfers(seedTransfers);
+    setCurrentUserId(1);
+    localStorage.removeItem(localKey);
+  }
+
+  function handleImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImage(String(reader.result));
+    reader.readAsDataURL(file);
+  }
+
+  function submitDiscard(e) {
+    e.preventDefault();
+    if (!item.trim()) return;
+
+    const matched = missionTemplates.find((m) => m.title === selectedMission);
+    const points = matched?.points ?? 2;
+
+    const newPost = {
+      id: Date.now(),
+      userId: currentUserId,
+      item: item.trim(),
+      category: category.trim() || "自由",
+      mission: selectedMission,
+      points,
+      note: note.trim(),
+      image,
+      cheers: 0,
+      comments: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    setPosts((prev) => [newPost, ...prev]);
+    setUsers((prev) =>
+      prev.map((user) =>
+        user.id === currentUserId
+          ? { ...user, points: user.points + points, streak: user.streak + 1 }
+          : user
+      )
+    );
+
+    setItem("");
+    setCategory(matched?.category && matched.category !== "自由" ? matched.category : "");
+    setNote("");
+    setImage("");
+    setTab("home");
+  }
+
+  function submitTransfer(e) {
+    e.preventDefault();
+    const amount = Number(transferPoints);
+    if (!amount || amount <= 0 || transferTo === currentUserId || (currentUser?.points ?? 0) < amount) return;
+
+    const newTransfer = {
+      id: Date.now(),
+      fromUserId: currentUserId,
+      toUserId: Number(transferTo),
+      points: amount,
+      reason: transferReason.trim() || "応援ポイント",
+      createdAt: new Date().toISOString(),
+    };
+
+    setTransfers((prev) => [newTransfer, ...prev]);
+    setUsers((prev) =>
+      prev.map((user) => {
+        if (user.id === currentUserId) return { ...user, points: user.points - amount };
+        if (user.id === Number(transferTo)) return { ...user, points: user.points + amount };
+        return user;
+      })
+    );
+
+    setTransferPoints(1);
+    setTransferReason("");
+    setTab("home");
+  }
+
+  function sendCheer(postId) {
+    setPosts((prev) => prev.map((post) => (post.id === postId ? { ...post, cheers: post.cheers + 1 } : post)));
+  }
+
+  if (!hydrated) {
+    return <div className="flex min-h-screen items-center justify-center bg-neutral-100 text-neutral-500">Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+      <div className="mx-auto flex min-h-screen max-w-md flex-col bg-white shadow-2xl lg:my-6 lg:min-h-[860px] lg:rounded-[2rem] lg:border lg:border-neutral-200">
+        <TopBar currentUser={currentUser} onReset={resetDemo} />
+
+        <main className="flex-1 overflow-y-auto px-4 pb-28 pt-4">
+          <AnimatePresence mode="wait">
+            {tab === "home" && (
+              <motion.div key="home" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-4">
+                <HeroCard currentUser={currentUser} totalTodayItems={totalTodayItems} totalTodayPoints={totalTodayPoints} />
+                <DailyMissionCard selectedMission={missionTemplates[0]} />
+                <SectionLabel title="今日のタイムライン" action="new" />
+                <div className="space-y-3">
+                  {feed.map((activity) => {
+                    if (activity.type === "post") {
+                      const post = activity.data;
+                      const user = users.find((u) => u.id === post.userId);
+                      return <PostCard key={post.id} post={post} user={user} onCheer={sendCheer} />;
+                    }
+                    const transfer = activity.data;
+                    const fromUser = users.find((u) => u.id === transfer.fromUserId);
+                    const toUser = users.find((u) => u.id === transfer.toUserId);
+                    return <TransferCard key={transfer.id} transfer={transfer} fromUser={fromUser} toUser={toUser} />;
+                  })}
                 </div>
+              </motion.div>
+            )}
+
+            {tab === "post" && (
+              <motion.div key="post" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                <ScreenTitle title="捨てたものを投稿" subtitle="写真付きで今日の断捨離を共有" />
+                <div className="mt-4 rounded-[1.5rem] bg-neutral-50 p-4">
+                  <form onSubmit={submitDiscard} className="space-y-4">
+                    <Field label="ミッション">
+                      <select
+                        value={selectedMission}
+                        onChange={(e) => {
+                          setSelectedMission(e.target.value);
+                          const matched = missionTemplates.find((m) => m.title === e.target.value);
+                          if (matched?.category && matched.category !== "自由") setCategory(matched.category);
+                        }}
+                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                      >
+                        {missionTemplates.map((mission) => (
+                          <option key={mission.id} value={mission.title}>
+                            {mission.title} ({mission.points}pt)
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+
+                    <Field label="捨てたもの">
+                      <input
+                        value={item}
+                        onChange={(e) => setItem(e.target.value)}
+                        placeholder="例：2年着てないシャツ"
+                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="カテゴリ">
+                        <input
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          placeholder="服 / 本 / 日用品"
+                          className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                        />
+                      </Field>
+                      <Field label="獲得ポイント">
+                        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-3 text-sm font-semibold">
+                          {missionTemplates.find((m) => m.title === selectedMission)?.points ?? 2}pt
+                        </div>
+                      </Field>
+                    </div>
+
+                    <Field label="ひとこと">
+                      <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        rows={4}
+                        placeholder="手放した理由や気分を書く"
+                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                      />
+                    </Field>
+
+                    <Field label="写真">
+                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-300 bg-white px-4 py-5 text-sm text-neutral-600 transition hover:bg-neutral-50">
+                        <Camera className="h-4 w-4" />
+                        写真を追加
+                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                      </label>
+                      {image ? <img src={image} alt="preview" className="mt-3 h-40 w-full rounded-2xl object-cover" /> : null}
+                    </Field>
+
+                    <button type="submit" className="w-full rounded-2xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white">
+                      投稿してポイント獲得
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
+            )}
+
+            {tab === "give" && (
+              <motion.div key="give" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                <ScreenTitle title="ポイントを贈る" subtitle="よかった断捨離に応援ポイント" />
+                <div className="mt-4 rounded-[1.5rem] bg-neutral-50 p-4">
+                  <form onSubmit={submitTransfer} className="space-y-4">
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <div className="text-xs text-neutral-500">あなたの残高</div>
+                      <div className="mt-1 text-2xl font-semibold">{currentUser?.points ?? 0}pt</div>
+                    </div>
+
+                    <Field label="相手">
+                      <select
+                        value={transferTo}
+                        onChange={(e) => setTransferTo(Number(e.target.value))}
+                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                      >
+                        {users.filter((user) => user.id !== currentUserId).map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+
+                    <Field label="ポイント数">
+                      <input
+                        type="number"
+                        min={1}
+                        max={currentUser?.points ?? 1}
+                        value={transferPoints}
+                        onChange={(e) => setTransferPoints(e.target.value)}
+                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                      />
+                    </Field>
+
+                    <Field label="理由">
+                      <input
+                        value={transferReason}
+                        onChange={(e) => setTransferReason(e.target.value)}
+                        placeholder="例：勇気がすごかった"
+                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                      />
+                    </Field>
+
+                    <button type="submit" className="w-full rounded-2xl bg-amber-500 px-4 py-3 text-sm font-medium text-white">
+                      ポイントを贈る
+                    </button>
+                  </form>
+                </div>
+
+                <SectionLabel title="今日のポイント移動" />
+                <div className="mt-3 space-y-3">
+                  {todayTransfers.map((transfer) => {
+                    const fromUser = users.find((u) => u.id === transfer.fromUserId);
+                    const toUser = users.find((u) => u.id === transfer.toUserId);
+                    return <TransferCard key={transfer.id} transfer={transfer} fromUser={fromUser} toUser={toUser} compact />;
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {tab === "rank" && (
+              <motion.div key="rank" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                <ScreenTitle title="ランキング" subtitle="みんなの断捨離スコア" />
+                <div className="mt-4 space-y-3">
+                  {ranking.map((user, index) => (
+                    <div key={user.id} className="flex items-center justify-between rounded-[1.5rem] bg-neutral-50 px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-semibold", index === 0 ? "bg-amber-100 text-amber-700" : "bg-white")}>
+                          {index === 0 ? <Crown className="h-5 w-5" /> : index + 1}
+                        </div>
+                        <div>
+                          <div className="font-medium">{user.name}</div>
+                          <div className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+                            <Flame className="h-3.5 w-3.5" />
+                            {user.streak}日連続
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold">{user.points}pt</div>
+                        <div className="text-xs text-neutral-500">total</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 rounded-[1.5rem] border border-dashed border-neutral-300 p-4 text-sm leading-6 text-neutral-600">
+                  Supabase をつなぐと、ここをリアルタイムランキングにできる。
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+
+        <BottomNav tab={tab} setTab={setTab} />
+      </div>
+    </div>
+  );
+}
+
+function TopBar({ currentUser, onReset }) {
+  return (
+    <div className="sticky top-0 z-20 rounded-b-[2rem] border-b border-neutral-100 bg-white/95 px-4 pb-4 pt-5 backdrop-blur">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-xs text-neutral-600">
+            <Sparkles className="h-3.5 w-3.5" />
+            Danshari Quest
+          </div>
+          <div className="mt-2 text-xl font-semibold">おかえり、{currentUser?.name}</div>
+        </div>
+        <button onClick={onReset} className="rounded-full bg-neutral-100 px-3 py-2 text-xs text-neutral-600">
+          reset
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HeroCard({ currentUser, totalTodayItems, totalTodayPoints }) {
+  return (
+    <div className="overflow-hidden rounded-[1.75rem] bg-neutral-900 p-5 text-white shadow-lg">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm text-white/70">今日のマイスコア</div>
+          <div className="mt-1 text-3xl font-semibold">{currentUser?.points ?? 0}pt</div>
+          <div className="mt-2 flex items-center gap-2 text-sm text-white/75">
+            <Flame className="h-4 w-4" />
+            {currentUser?.streak ?? 0}日連続チャレンジ
+          </div>
+        </div>
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-lg font-semibold">
+          {currentUser?.avatar}
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <MiniStat label="今日の処分数" value={`${totalTodayItems}件`} />
+        <MiniStat label="今日の総ポイント" value={`${totalTodayPoints}pt`} />
+      </div>
+    </div>
+  );
+}
+
+function DailyMissionCard({ selectedMission }) {
+  return (
+    <div className="rounded-[1.5rem] bg-emerald-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-medium text-emerald-700">TODAY'S MISSION</div>
+          <div className="mt-1 text-base font-semibold leading-6 text-neutral-900">{selectedMission.title}</div>
+          <div className="mt-2 inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-medium text-neutral-600">
+            {selectedMission.points}pt ・ {selectedMission.difficulty}
+          </div>
+        </div>
+        <div className="rounded-2xl bg-white p-2 text-emerald-700">
+          <Target className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionLabel({ title, action }) {
+  return (
+    <div className="flex items-center justify-between pt-2">
+      <h2 className="text-sm font-semibold">{title}</h2>
+      {action ? (
+        <button className="inline-flex items-center gap-1 text-xs text-neutral-500">
+          {action}
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function PostCard({ post, user, onCheer }) {
+  return (
+    <div className="overflow-hidden rounded-[1.5rem] border border-neutral-200 bg-white shadow-sm">
+      <div className="p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-neutral-100 font-medium">
+              {user?.avatar}
             </div>
+            <div>
+              <div className="text-sm font-medium">{user?.name}</div>
+              <div className="text-xs text-neutral-500">{formatTime(post.createdAt)} ・ {post.category}</div>
+            </div>
+          </div>
+          <div className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">+{post.points}pt</div>
         </div>
-        <div class="text-center mt-4 text-zinc-600 text-[10px] uppercase tracking-widest opacity-50">
-            Anaguma Community Bingo Tool
+
+        <div className="mt-3 text-base font-semibold leading-6">{post.item}</div>
+        <div className="mt-1 text-sm text-neutral-600">{post.mission}</div>
+        {post.note ? <p className="mt-3 text-sm leading-6 text-neutral-700">{post.note}</p> : null}
+      </div>
+
+      {post.image ? <img src={post.image} alt={post.item} className="h-52 w-full object-cover" /> : null}
+
+      <div className="flex items-center justify-between border-t border-neutral-100 px-4 py-3 text-sm text-neutral-600">
+        <button onClick={() => onCheer(post.id)} className="inline-flex items-center gap-2">
+          <Heart className="h-4 w-4" />
+          {post.cheers}
+        </button>
+        <div className="inline-flex items-center gap-2">
+          <MessageCircle className="h-4 w-4" />
+          {post.comments}
         </div>
+      </div>
     </div>
+  );
+}
 
-    <div class="flex flex-col items-center gap-6">
-        <div id="bingo-counter" class="text-blue-400 font-bold bg-blue-900/20 px-6 py-2 rounded-full border border-blue-800/50 text-lg">
-            Bingo Count: 0
+function TransferCard({ transfer, fromUser, toUser, compact = false }) {
+  return (
+    <div className={cn("rounded-[1.5rem] border border-neutral-200 bg-amber-50", compact ? "p-3" : "p-4")}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-amber-700">
+            <Gift className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="text-sm font-medium">
+              {fromUser?.name} → {toUser?.name}
+            </div>
+            <div className="text-xs text-neutral-500">{transfer.reason} ・ {formatTime(transfer.createdAt)}</div>
+          </div>
         </div>
-        
-        <div class="flex flex-wrap justify-center gap-4">
-            <button id="save-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                画像として保存
-            </button>
-
-            <button id="regenerate-btn" class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-                カードを再生成
-            </button>
-        </div>
+        <div className="text-sm font-semibold text-amber-700">{transfer.points}pt</div>
+      </div>
     </div>
+  );
+}
 
-    <footer class="mt-12 text-zinc-600 text-xs text-center pb-8">
-        &copy; Anaguma Community Bingo Tool
-    </footer>
+function ScreenTitle({ title, subtitle }) {
+  return (
+    <div>
+      <h1 className="text-xl font-semibold">{title}</h1>
+      <p className="mt-1 text-sm text-neutral-500">{subtitle}</p>
+    </div>
+  );
+}
 
-    <script>
-        const logoImg = document.getElementById('main-logo');
-        logoImg.onerror = function() {
-            this.style.display = 'none';
-            console.log("Logo file not found. Please ensure 'Anagumalabo_logo.png' is in the same directory.");
-        };
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <div className="mb-2 text-sm font-medium text-neutral-700">{label}</div>
+      {children}
+    </label>
+  );
+}
 
-        const memberNames = [
-            "さきこ", "kimkim", "アフロマンス", "ゆず", "misa", "あさみ", "ももこ", "たかなり", "トヨマネ", "わいちゃん",
-            "くるみ", "Eddy", "moya", "だいちゃん", "しゅっぺ", "永田", "トミー", "けにー", "ゆり", "かほ",
-            "Takaaya", "あやか", "きんちゃん", "こい", "ありな", "とも", "りり", "omiki", "Jun Inaba", "タカヒロ",
-            "ひかり", "ひろき", "しの", "にーやん", "あいめろ", "ゆきや／チベ", "しん", "ノナカ", "yas-o", "まっとも",
-            "コジ", "りみ", "たびろち", "ユート", "あかりん", "じょう", "もりや", "おーしま", "スイタ氏", "えりんご",
-            "あせどん", "やぶ", "ルーク", "ニック", "よねじ", "いつか", "ミハラ", "まあさ", "あやせ", "くの",
-            "Suzume", "くりぴ〜", "ゆい", "アラレ", "まゆ", "さき", "5歳", "ぴろ", "つっくん", "じょ",
-            "白鳥るな", "りょうちゃん", "アイ", "おいちゃん", "ももな", "ささき", "アトム", "yoshi", "ナホ", "いちろー",
-            "西田 真魚", "ダイスケ", "ミヤ", "HERO", "パクチー長瀬", "たぐち", "まっしー", "あや", "くら", "さいさい",
-            "せつこ", "ハマー", "なお", "じゅんや", "よしよし", "フルッター", "ユウ", "しらさか", "いじゅ", "叶ここ",
-            "川崎塾", "あさくら", "ちあき", "ちょう", "さらにあん", "みどり", "しもりん", "おかっち", "おしげ", "かずーちゃ",
-            "ねじ", "との", "せん", "まお", "ゆーじ", "ジロー", "ぽん(こやま)", "なかやま", "マッチ", "ほのか",
-            "えいじ", "のぞみ", "みょっこ", "よーすけ", "mika", "シュウヘイ", "しゅうすけ", "マサト", "米光一成", "よね",
-            "マウイ", "ayumi", "みやかな", "柚井ゆい", "じゅん", "あっぴ", "ふじ", "ベロタン", "あつみん", "ごう",
-            "はしもと", "こうは", "ゆうこ", "ちかさん", "青鳥の如き尊きもの（アオドリ）"
-        ];
+function MiniStat({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-white/10 px-4 py-3">
+      <div className="text-xs text-white/60">{label}</div>
+      <div className="mt-1 text-lg font-semibold">{value}</div>
+    </div>
+  );
+}
 
-        let boardData = [];
-        let completedBingos = 0; 
+function BottomNav({ tab, setTab }) {
+  const items = [
+    { key: "home", label: "ホーム", icon: Home },
+    { key: "post", label: "投稿", icon: Plus },
+    { key: "give", label: "贈る", icon: Send },
+    { key: "rank", label: "順位", icon: Trophy },
+  ];
 
-        function initGame() {
-            const board = document.getElementById('bingo-board');
-            board.innerHTML = '';
-            boardData = [];
-            completedBingos = 0;
-            updateCounter();
-            
-            const shuffled = [...memberNames].sort(() => 0.5 - Math.random());
-            const selected = shuffled.slice(0, 24);
-            
-            let nameIndex = 0;
-            for (let i = 0; i < 25; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'bingo-cell';
-                if (i === 12) {
-                    cell.textContent = 'FREE';
-                    cell.classList.add('free', 'marked');
-                    boardData.push({ id: i, name: 'FREE', marked: true });
-                } else {
-                    const name = selected[nameIndex++];
-                    cell.textContent = name;
-                    cell.addEventListener('click', () => toggleMark(i, cell));
-                    boardData.push({ id: i, name: name, marked: false });
-                }
-                board.appendChild(cell);
-            }
-        }
+  return (
+    <div className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md border-t border-neutral-200 bg-white px-3 pb-5 pt-3 lg:bottom-6 lg:rounded-b-[2rem]">
+      <div className="grid grid-cols-4 gap-2">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const active = tab === item.key;
+          return (
+            <button
+              key={item.key}
+              onClick={() => setTab(item.key)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-xs transition",
+                active ? "bg-neutral-900 text-white" : "text-neutral-500 hover:bg-neutral-100"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-        function toggleMark(index, element) {
-            boardData[index].marked = !boardData[index].marked;
-            element.classList.toggle('marked', boardData[index].marked);
-            checkBingo();
-        }
-
-        function updateCounter() {
-            document.getElementById('bingo-counter').textContent = `Bingo Count: ${completedBingos}`;
-        }
-
-        function checkBingo() {
-            const size = 5;
-            let count = 0;
-            // Rows
-            for (let i = 0; i < size; i++) if (boardData.slice(i*5, i*5+5).every(d => d.marked)) count++;
-            // Cols
-            for (let i = 0; i < size; i++) {
-                let col = [];
-                for (let j = 0; j < size; j++) col.push(boardData[i + j*5]);
-                if (col.every(d => d.marked)) count++;
-            }
-            // Diagonals
-            let d1 = [], d2 = [];
-            for (let i = 0; i < size; i++) {
-                d1.push(boardData[i * 6]);
-                d2.push(boardData[(i + 1) * 4]);
-            }
-            if (d1.every(d => d.marked)) count++;
-            if (d2.every(d => d.marked)) count++;
-
-            if (count > completedBingos) {
-                completedBingos = count;
-                updateCounter();
-                showOverlay();
-            } else {
-                completedBingos = count;
-                updateCounter();
-            }
-        }
-
-        function showOverlay() { document.getElementById('bingo-overlay').classList.remove('hidden'); }
-        function closeOverlay() { document.getElementById('bingo-overlay').classList.add('hidden'); }
-
-        async function saveAsImage() {
-            const target = document.getElementById('capture-target');
-            const saveBtn = document.getElementById('save-btn');
-            saveBtn.disabled = true;
-            saveBtn.innerText = "保存中...";
-            try {
-                const canvas = await html2canvas(target, {
-                    backgroundColor: '#000',
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true
-                });
-                const link = document.createElement('a');
-                link.download = `AnagumaBingo_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            } catch (err) {
-                console.error(err);
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>画像として保存`;
-            }
-        }
-
-        document.getElementById('save-btn').addEventListener('click', saveAsImage);
-        document.getElementById('regenerate-btn').addEventListener('click', () => {
-            if (confirm('カードを新しく作り直しますか？')) initGame();
-        });
-
-        initGame();
-    </script>
-</body>
-</html>
+export default App;
